@@ -10,7 +10,7 @@ import jakarta.mail.*;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 import jakarta.mail.search.AndTerm;
-import jakarta.mail.search.FromStringTerm;
+import jakarta.mail.search.RecipientStringTerm;
 import jakarta.mail.search.SearchTerm;
 import jakarta.mail.search.SubjectTerm;
 import org.springframework.http.HttpStatus;
@@ -30,8 +30,7 @@ public class EmailService {
 
     private final JavaMailSender javaMailSender;
     private final TemplateEngine templateEngine;
-    private final Store store;
-
+    private final Folder emailFolder;
 
     public EmailService(JavaMailSender javaMailSender, TemplateEngine templateEngine) throws MessagingException {
         this.javaMailSender = javaMailSender;
@@ -44,8 +43,11 @@ public class EmailService {
         properties.put("mail.imap.port", mailSenderDetails.getPort());
         properties.put("mail.imap.ssl.enable", "true");
         Session session = Session.getDefaultInstance(properties);
-        this.store = session.getStore("imaps");
-        this.store.connect(mailSenderDetails.getHost(), mailSenderDetails.getUsername(), mailSenderDetails.getPassword());
+        Store store = session.getStore("imaps");
+        store.connect(mailSenderDetails.getHost(), mailSenderDetails.getUsername(), mailSenderDetails.getPassword());
+        this.emailFolder = store.getFolder("[Gmail]/Sent Mail");
+        emailFolder.open(Folder.READ_ONLY);
+
     }
 
     public void sendPaymentMailToVendors(List<Vendor> vendors) throws CredmargPortalException {
@@ -62,15 +64,10 @@ public class EmailService {
 
     public List<SendMailDetails> readSentEmails(EmailFilterRequest emailFilterRequest) throws CredmargPortalException {
         try {
-            List<SendMailDetails> mailList = new ArrayList<>();
-            Folder emailFolder = store.getFolder("[Gmail]/Sent Mail");
-            emailFolder.open(Folder.READ_ONLY);
-
             List<SearchTerm> searchTermList = new ArrayList<>();
-
             if (!CollectionUtils.isEmpty(emailFilterRequest.getSentTo())) {
                 emailFilterRequest.getSentTo().stream().filter(StringUtils::isNotBlank)
-                        .forEach(s -> searchTermList.add(new FromStringTerm(s.toLowerCase())));
+                        .forEach(s -> searchTermList.add(new RecipientStringTerm(Message.RecipientType.TO, s.toLowerCase())));
             }
             if (!CollectionUtils.isEmpty(emailFilterRequest.getSubjects())) {
                 emailFilterRequest.getSubjects().stream().filter(StringUtils::isNotBlank)
@@ -80,11 +77,13 @@ public class EmailService {
 
             Message[] messages = emailFolder.search(new AndTerm(searchTermList.toArray(new SearchTerm[0])));
 
-            for (Message m : messages) {
-                mailList.add(getTextFromMessage(m));
-            }
-            emailFolder.close(false);
-            return mailList;
+            return Arrays.asList(messages).parallelStream().map(message -> {
+                try {
+                    return getTextFromMessage(message);
+                } catch (MessagingException | IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }).toList();
         } catch (Exception e) {
             e.printStackTrace();
             throw new CredmargPortalException("failed to readSentEmails");
