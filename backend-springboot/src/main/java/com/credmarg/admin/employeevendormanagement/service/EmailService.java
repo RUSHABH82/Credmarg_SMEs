@@ -130,7 +130,7 @@ public class EmailService {
             for (int i = 0; i < emailDetailsList.size(); i++) {
                 EmailDetails emailDetails = emailDetailsList.get(i);
                 MimeMessage mimeMessage = javaMailSender.createMimeMessage();
-                MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, false, "UTF-8");
+                MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
                 mimeMessageHelper.setFrom(Objects.requireNonNull(((JavaMailSenderImpl) javaMailSender).getUsername()));
                 mimeMessageHelper.setTo(emailDetails.getSendTo());
                 mimeMessageHelper.setSubject(emailDetails.getSubject());
