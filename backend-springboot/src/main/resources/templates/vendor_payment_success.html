@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Vendor Payment</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .email-container {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 0 auto;
+            border: 1px solid #dddddd;
+        }
+
+        h1 {
+            color: #333333;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        p {
+            color: #555555;
+            line-height: 1.5;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+
+        .footer {
+            margin-top: 20px;
+            color: #888888;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .email-header {
+            background-color: #4CAF50;
+            color: #ffffff;
+            padding: 10px;
+            border-radius: 5px 5px 0 0;
+            text-align: center;
+        }
+
+        .email-body {
+            padding: 20px;
+        }
+
+        .email-body p {
+            margin: 0;
+        }
+
+        .highlight {
+            background-color: #ffffcc;
+            padding: 3px;
+            border-radius: 3px;
+        }
+
+        .signature {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+<div class="email-container">
+    <div class="email-header">
+        <h1>Payment Notification</h1>
+    </div>
+    <div class="email-body">
+        <p>Dear <span th:text="${name}"></span>,</p>
+        <p>We are sending payments to your UPI account: <span class="highlight" th:text="${upi}"></span>.</p>
+        <p>Thank you for your services.</p>
+        <div class="signature">
+            <p>Best regards,</p>
+            <p>SMEs corporation</p>
+        </div>
+    </div>
+    <div class="footer">
+        &copy; 2024 SMEs Corporation. All rights reserved.
+    </div>
+</div>
+</body>
+</html>
