@@ -30,13 +30,16 @@ public class EmailService {
 
     private final JavaMailSender javaMailSender;
     private final TemplateEngine templateEngine;
-    private final Folder emailFolder;
+    private Folder emailFolder;
 
     public EmailService(JavaMailSender javaMailSender, TemplateEngine templateEngine) throws MessagingException {
         this.javaMailSender = javaMailSender;
         this.templateEngine = templateEngine;
-        final JavaMailSenderImpl mailSenderDetails = (JavaMailSenderImpl) javaMailSender;
+        injectMailInFolder();
+    }
 
+    private void injectMailInFolder() throws MessagingException {
+        final JavaMailSenderImpl mailSenderDetails = (JavaMailSenderImpl) javaMailSender;
         Properties properties = new Properties();
         properties.put("mail.store.protocol", "imaps");
         properties.put("mail.imap.host", mailSenderDetails.getHost());
@@ -47,7 +50,6 @@ public class EmailService {
         store.connect(mailSenderDetails.getHost(), mailSenderDetails.getUsername(), mailSenderDetails.getPassword());
         this.emailFolder = store.getFolder("[Gmail]/Sent Mail");
         emailFolder.open(Folder.READ_ONLY);
-
     }
 
     public void sendPaymentMailToVendors(List<Vendor> vendors) throws CredmargPortalException {
@@ -64,7 +66,9 @@ public class EmailService {
 
     public List<SendMailDetails> readSentEmails(EmailFilterRequest emailFilterRequest) throws CredmargPortalException {
         try {
-            List<SearchTerm> searchTermList = new ArrayList<>();
+            if (!emailFolder.isOpen()) {
+                injectMailInFolder();
+            }List<SearchTerm> searchTermList = new ArrayList<>();
             if (!CollectionUtils.isEmpty(emailFilterRequest.getSentTo())) {
                 emailFilterRequest.getSentTo().stream().filter(StringUtils::isNotBlank)
                         .forEach(s -> searchTermList.add(new RecipientStringTerm(Message.RecipientType.TO, s.toLowerCase())));
@@ -85,7 +89,6 @@ public class EmailService {
                 }
             }).toList();
         } catch (Exception e) {
-            e.printStackTrace();
             throw new CredmargPortalException("failed to readSentEmails");
         }
 
